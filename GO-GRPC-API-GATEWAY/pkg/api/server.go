@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/AnanyaDevGo/GO-GRPC-API-GATEWAY/pkg/api/handler"
+	"github.com/AnanyaDevGo/GO-GRPC-API-GATEWAY/pkg/api/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,7 +12,7 @@ type ServerHTTP struct {
 	engine *gin.Engine
 }
 
-func NewServerHTTP(adminHandler *handler.AdminHandler) *ServerHTTP {
+func NewServerHTTP(adminHandler *handler.AdminHandler, productHandler *handler.ProductHandler, userHandler *handler.UserHandler, cartHandler *handler.CartHandler, orderhandler *handler.OrderHandler) *ServerHTTP {
 	router := gin.New()
 
 	router.Use(gin.Logger())
@@ -19,6 +20,25 @@ func NewServerHTTP(adminHandler *handler.AdminHandler) *ServerHTTP {
 	router.POST("/admin/login", adminHandler.LoginHandler)
 	router.POST("/admin/signup", adminHandler.AdminSignUp)
 
+	router.POST("/user/signup", userHandler.UserSignup)
+	router.POST("/user/login", userHandler.Userlogin)
+
+	router.GET("/product", productHandler.ShowAllProducts)
+
+	router.Use(middleware.AdminAuthMiddleware())
+	{
+		router.POST("/product", productHandler.AddProducts)
+		router.DELETE("/product", productHandler.DeleteProduct)
+		router.PUT("/product", productHandler.UpdateProducts)
+	}
+	router.Use(middleware.UserAuthMiddleware())
+	{
+		router.POST("/cart", cartHandler.AddToCart)
+		router.GET("/cart", cartHandler.GetCart)
+
+		router.POST("/order", orderhandler.OrderItemsFromCart)
+		router.GET("/order", orderhandler.GetOrderDetails)
+	}
 	return &ServerHTTP{engine: router}
 }
 
